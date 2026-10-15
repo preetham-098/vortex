@@ -1,0 +1,29 @@
+{
+  "model_version": "rf-workload-v1.0",
+  "metric_units": "hours/week",
+  "sample_size": 213,
+  "random_forest": {
+    "mae": 2.585,
+    "rmse": 3.159
+  },
+  "persistence_baseline": {
+    "mae": 7.625,
+    "rmse": 9.44
+  },
+  "relative_improvement": {
+    "mae_reduction_pct": 66.1,
+    "rmse_reduction_pct": 66.54
+  },
+  "is_synthetic_demonstration": true,
+  "demonstration_notice": "Trained on synthetic enterprise telemetry data for hackathon demonstration. Do not present as real-world accuracy.",
+  "feature_importances": {
+    "previous_workload_hours": 0.1347,
+    "historical_utilization": 0.2932,
+    "active_assignment_count": 0.0131,
+    "planned_project_hours": 0.3294,
+    "upcoming_deadlines_count": 0.0358,
+    "department_code": 0.0089,
+    "experience_years": 0.0239,
+    "workload_trend": 0.1609
+  }
+}

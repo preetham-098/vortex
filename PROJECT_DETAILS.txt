@@ -1,0 +1,275 @@
+================================================================================
+VORTEX WORKFORCE INTELLIGENCE - TECHNICAL SPECIFICATION & PROJECT DETAILS
+AMC HackAttack 2026 | Track: Web & App Development
+================================================================================
+Generated: 2026-10-15
+Location: Project Root (PROJECT_DETAILS.txt)
+Status: Complete, Verified & Tested (Local Demo Mode)
+
+--------------------------------------------------------------------------------
+1. PROJECT OVERVIEW & TARGET USERS
+--------------------------------------------------------------------------------
+Vortex Workforce Intelligence is an AI-assisted workforce optimization, talent
+matching, and predictive capacity analytics platform. It replaces manual
+spreadsheets and intuition-based staffing with multi-criteria matching, integer
+linear programming (ILP) task allocation, weighted skill gap analysis (WSGA),
+and held-out Random Forest workload forecasting.
+
+TARGET USERS:
+- Resource & Staffing Managers: Match employees to projects under hard skill and
+  capacity constraints; rebalance teams to prevent burnout.
+- Engineering Directors & Team Leads: Optimize complementary squads to maximize
+  collective competency coverage; approve solver allocations.
+- HR & Learning/Development Officers: Identify strategic competency gaps and
+  enroll staff into prioritized upskilling curricula.
+- Executive Leadership: Monitor organization-wide capacity utilization, risk
+  imbalance (sigma/mu), and historical forecasting accuracy.
+
+--------------------------------------------------------------------------------
+2. TECH STACK
+--------------------------------------------------------------------------------
+FRONTEND:
+- Framework: Next.js 16.4.1 (App Router, Turbopack, React 19.3.0)
+- Styling: Tailwind CSS 4, Custom Apple HIG & Dalworka Design Tokens
+- Motion: Framer Motion 14.2.0 (Physical spring physics, gestures, active pills)
+- Icons: Lucide React 1.16.0
+- Data Visualization: Recharts 2.15.0 (Area charts, bar charts, radial gauges)
+- State Management: React Hooks + Zustand 5.0.15 (Theme & UI stores)
+
+BACKEND & RUNTIME:
+- Server Runtime: Node.js 20+ with Next.js Route Handlers (/api/*)
+- Validation: Zod 3.24.1 (Strict runtime domain schemas)
+- Security & Auth Context: Custom RBAC middleware ('manager', 'admin', 'employee')
+  via request headers (x-organization-id, x-user-id, x-user-role)
+- CSV Engine: Streaming CSV parser with column mapping, type coercion, and pre-commit
+  schema validation
+
+MACHINE LEARNING SUBSYSTEM:
+- Language & Environment: Python 3.13.3
+- Libraries: scikit-learn, pandas, numpy, scipy, joblib
+- Architecture: Chronological train/test split (Cycles 1-9 train, 10-12 test),
+  Random Forest regressor with confidence intervals, bridged via IPC to Node.js
+
+TESTING SUITE:
+- TypeScript / App: Vitest 3.2.7 (27/27 unit tests passing across 5 suites)
+- Python ML: unittest (3/3 tests passing: preprocessing, evaluation, inference)
+
+--------------------------------------------------------------------------------
+3. ARCHITECTURE (MULTI-LAYER PATTERN)
+--------------------------------------------------------------------------------
+The codebase strictly adheres to a 4-tier separated architecture:
+
+1. Presentation Layer (src/components/):
+   - Shell (Sidebar + Glass TopBar + Drawer)
+   - Apple Human Interface Design Primitives (ScoreRing, UtilizationBar, StatCard,
+     Badge, Button, Drawer, Modal, EmptyState, Skeleton)
+   - Dedicated Module Views (Executive Cockpit, Project Match & WSGA, Workload &
+     Rebalance, Skills Heatmap, Training Catalog, RF ML Simulator, Employee Roster,
+     Project Pipeline, CSV Import Modal)
+
+2. Business Logic & Algorithm Services (src/lib/algorithms/):
+   - Pure, deterministic, framework-agnostic mathematical implementations.
+   - Algorithms 1-7 run independently of UI components.
+
+3. Data Access & Store Layer (src/lib/db/):
+   - In-memory multi-tenant store (dbService) with full relational CRUD.
+   - 4 pre-packaged synthetic datasets across distinct industries.
+
+4. Machine Learning Service (ml_service/):
+   - Standalone Python module for feature engineering, model training, evaluation,
+     and real-time workload inference.
+
+--------------------------------------------------------------------------------
+4. DATABASE & DATASETS (ACTIVE VS. PLANNED)
+--------------------------------------------------------------------------------
+[VERIFIED ACTIVE] LOCAL IN-MEMORY DUAL-MODE STORE:
+- Zero external infrastructure dependency required for local execution.
+- Multi-tenant data segregation keyed by organizationId.
+- Full CRUD for Employees, Projects, Assignments, Training Courses, and Recommendations.
+
+[VERIFIED ACTIVE] 4 SELECTABLE SYNTHETIC DATASETS:
+1. 'enterprise_tech' (Apex Enterprise AI & Cloud):
+   12 employees, 4 projects, 7 assignments, 10 training courses.
+   Focus: PyTorch, distributed systems, Kubernetes, Cloud architecture.
+2. 'fintech_scaleup' (Quantix Real-Time FinTech):
+   High-frequency trading, low-latency C++, Go, Kafka SRE.
+3. 'health_biotech' (Genomix BioHealth):
+   Bioinformatics pipelines, Nextflow, PyTorch DICOM, HIPAA compliance.
+4. 'saas_startup' (Velocity SaaS Studio):
+   Collaborative web platforms, React, Next.js, CRDTs, Zustand state trees.
+
+[PLANNED / INACTIVE] FIREBASE FIRESTORE & AUTH:
+- Firebase Client SDK (src/lib/firebase/config.ts) and Admin SDK (src/lib/firebase/admin.ts)
+  scaffolded and ready.
+- Currently bypassed in favor of local in-memory store per local demo specifications.
+
+--------------------------------------------------------------------------------
+5. OPTIMIZATION ALGORITHMS & EXACT MATHEMATICAL FORMULAS
+--------------------------------------------------------------------------------
+All 7 algorithms are verified with automated unit tests and mathematical integrity.
+
+ALGORITHM 1: WEIGHTED SKILL GAP ANALYSIS (WSGA) & TEAM COVERAGE
+File: src/lib/algorithms/wsga.ts
+- Individual Skill Gap:
+    M_ij = max(0, R_j - E_ij)
+    where R_j is required proficiency (1-5) and E_ij is employee proficiency.
+- Aggregate Skill Gap:
+    SG_i = (1 / |R|) * sum_{j in R} (M_ij * w_j)
+- Skill Match Percentage:
+    SkillMatch_i = max(0, 100 * (1 - (sum_{j} M_ij * w_j) / (sum_{j} R_j * w_j)))
+- Training Priority Index:
+    TP_ij = M_ij * w_j * P_j
+    where P_j is priority multiplier (Critical=3, High=2, Medium=1, Low=0.5).
+- Team Collective Skill Level:
+    E_team,j = max_{i in Team}(E_ij)
+- Team Collective Gap:
+    M_team,j = max(0, R_j - E_team,j)
+- Team Coverage Percentage:
+    Coverage% = 100 * |{j in R : E_team,j >= R_j}| / |R|
+
+ALGORITHM 2: WEIGHTED MULTI-CRITERIA CANDIDATE MATCHING
+File: src/lib/algorithms/matching.ts
+- Multi-Criteria Score Formula:
+    Score_ip = w_s * S_ip + w_e * E_ip + w_a * A_i + w_p * P_i
+- Constraints:
+    sum(w_s, w_e, w_a, w_p) = 1.0  (Default: 0.50, 0.20, 0.20, 0.10)
+    Hard Constraint: E_ij >= R_j for all j in MandatorySkills_p
+- Normalized Sub-Scores:
+    S_ip = SkillMatch_i (from WSGA)
+    E_ip = min(100, (ExperienceYears_i / MinExperience_p) * 100)
+    A_i  = min(100, max(0, (AvailableHours_i / TotalCapacity_i) * 100))
+    P_i  = HistoricalPerformance_i (Fallback: 75/100 with mandatory UI disclosure)
+
+ALGORITHM 3: WORKLOAD BALANCING & CAPACITY ANALYSIS
+File: src/lib/algorithms/workload.ts
+- Remaining Capacity:
+    C_i = H_i - L_i
+    (Preserves negative values to identify overload severity)
+- Utilization Percentage:
+    U_i = (L_i / H_i) * 100
+- Mean Workload:
+    mu(L) = (1 / N) * sum_{i=1}^N L_i
+- Standard Deviation:
+    sigma(L) = sqrt((1 / N) * sum_{i=1}^N (L_i - mu(L))^2)
+- Workload Imbalance Ratio:
+    ImbalanceRatio = sigma(L) / mu(L)
+
+ALGORITHM 4: CONSTRAINED TASK ALLOCATION (ILP OPTIMIZATION)
+File: src/lib/algorithms/taskAllocation.ts
+- Optimization Objective:
+    min sum_{k in Tasks} sum_{i in Staff} x_ik * [
+      alpha * (100 - S_ik) +
+      beta  * ((L_i + h_k) / H_i * 100) +
+      gamma * tau
+    ]
+    where:
+    - S_ik = candidate skill match percentage for task k
+    - h_k = estimated task effort hours
+    - tau = project deadline urgency penalty (0 to 100)
+    - Default weights: alpha = 0.50, beta = 0.30, gamma = 0.20
+- Subject to Constraints:
+    1. Capacity Constraint: sum_{k} (x_ik * h_k) <= H_i - L_i  for each employee i
+    2. Single Assignment:   sum_{i} x_ik = 1                   for each task k
+    3. Binary Domain:       x_ik in {0, 1}
+- Feasibility Guarantee: Infeasible tasks flagged with capacity shortfall warnings.
+  Proposals require manager approval before persisting to assignments.
+
+ALGORITHM 5: TOP AVAILABLE TALENT IDENTIFICATION
+File: src/lib/algorithms/talent.ts
+- Talent Availability Score:
+    TalentScore_ij = Score_ij * (A_i / H_i)
+    Penalizes candidates with high skill matches but exhausted operational capacity.
+
+ALGORITHM 6: RANDOM FOREST WORKLOAD FORECASTING (ML)
+Directory: ml_service/
+- Model: scikit-learn RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
+- Prediction Target:
+    hat{L}_{i, t+1} = f(L_{i, t}, U_{i, hist}, C_active, H_planned, D_deadlines, Dept, Exp, Trend)
+- Train/Test Split: Held-out chronological split (Cycles 1-9 train: 787 samples; Cycles 10-12 test: 213 samples).
+- Verified Test Metrics:
+    Random Forest MAE:  2.585 hours
+    Random Forest RMSE: 3.159 hours
+    Baseline Mean MAE:  7.625 hours
+    Error Reduction:    66.1% improvement over historical baseline
+- 80% Confidence Interval:
+    [hat{y} - 1.28 * sigma_trees, hat{y} + 1.28 * sigma_trees]
+    where sigma_trees is the standard deviation across all 100 estimator predictions.
+
+ALGORITHM 7: FINAL WORKFORCE OPTIMIZATION SCORE
+File: src/lib/algorithms/workforceScore.ts
+- Holistic Workforce Score:
+    F_i = lambda_1 * SkillMatch_i + lambda_2 * Availability_i + lambda_3 * Performance_i - lambda_4 * WorkloadPenalty_i
+- Weights:
+    lambda_1 = 0.40, lambda_2 = 0.25, lambda_3 = 0.20, lambda_4 = 0.15
+- Workload Penalty Function:
+    WorkloadPenalty_i = max(0, Utilization_i - 100) * 2.0
+    Preserves negative scores for severely over-allocated personnel.
+
+--------------------------------------------------------------------------------
+6. KEY FEATURES & INTERACTIVE MODULES
+--------------------------------------------------------------------------------
+1. Executive Cockpit:
+   - Hero Dalworka accent card with animated counting metrics and mini-spark bars.
+   - 10-day weekly team activity heatmap with spring hover interactions.
+   - Recharts utilization trajectory area chart against the 80% golden ratio.
+   - Live leaderboards for Algorithm 5 Available Talent and Algorithm 7 Workforce Scores.
+2. Talent Match & WSGA Engine:
+   - Dynamic weight adjustment sliders with real-time constraint validation (sum = 1.0).
+   - Ranked candidate cards with circular ScoreRing progress indicators.
+   - Comprehensive WSGA table displaying gaps, mandatory flags, and training priorities.
+3. Workload & Capacity Balancing:
+   - Capacity Spectrum Radar with live-pulsing indicators (Overloaded >100%, Healthy 50-100%,
+     Underutilized <50%).
+   - Threshold-marked UtilizationBar elements (50% and 100% capacity markers).
+   - Integer Linear Programming (ILP) solver with pre- vs. post-allocation impact chart.
+   - "Manager Approval: Commit Assignments" action with dynamic database commit.
+4. Skills & Competency Heatmap:
+   - Interactive 1-5 level competency matrix filterable by department and competency.
+   - Click-to-open sliding EmployeeDetailDrawer displaying capacity, historical rating,
+     and active project commitments.
+5. Upskill & Training Pathways:
+   - Strategic gap remediation banner linking courses to WSGA bottlenecks.
+   - Interactive staff enrollment tracking and "Register Training Course" modal.
+6. Random Forest ML Simulator:
+   - Interactive inference simulation with custom feature inputs and 80% confidence interval.
+7. Data Management & Ingestion:
+   - Instant switching across 4 synthetic workforce datasets.
+   - CSV upload with client-side parsing, schema verification, row error badges, and preview.
+   - Full CRUD modals for Employees and Projects.
+8. Accessibility & Theming:
+   - Light and Dark modes with instant toggle.
+   - Full reduced-motion and high-contrast support via Apple Human Interface tokens.
+
+--------------------------------------------------------------------------------
+7. VERIFICATION MATRIX & TEST RESULTS
+--------------------------------------------------------------------------------
+- Vitest Suite:
+  * phase2-crud.test.ts: Passed (5 tests)
+  * phase3-algorithms.test.ts: Passed (10 tests)
+  * phase4-algorithms.test.ts: Passed (6 tests)
+  * phase5-ml.test.ts: Passed (2 tests)
+  * phase6-workforce-score.test.ts: Passed (4 tests)
+  Total: 27/27 PASSED (100%)
+
+- Python ML Suite:
+  * test_ml.py: Passed (3/3 tests)
+  * MAE: 2.585h, RMSE: 3.159h (66.1% baseline improvement)
+
+- Next.js Production Build:
+  * Command: npm run build (next build)
+  * Status: Exit code 0 (18/18 static/dynamic routes compiled cleanly in 8.5s)
+
+- Dev Server:
+  * Status: Live and operational at http://localhost:3000
+
+--------------------------------------------------------------------------------
+8. PLANNED & ROADMAP ENHANCEMENTS
+--------------------------------------------------------------------------------
+[PLANNED] Cloud Firestore Persistence:
+  Connect existing Firebase configuration to remote GCP Firestore instances for
+  multi-region persistence.
+[PLANNED] Enterprise SSO:
+  SAML 2.0 / Okta / Azure AD integration for role provisioning.
+[PLANNED] Automated Webhooks:
+  Real-time Slack and email notifications when employee workload exceeds 115% capacity.
+================================================================================

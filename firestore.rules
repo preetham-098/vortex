@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isManagerOrAdmin(orgId) {
+      let u = getUserData();
+      return isAuthenticated() && 
+             u.organizationId == orgId && 
+             (u.role == 'manager' || u.role == 'admin');
+    }
+
+    function isOrgMember(orgId) {
+      return isAuthenticated() && getUserData().organizationId == orgId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || getUserData().role == 'admin');
+      // Only admin or server admin SDK can update roles
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && (getUserData().role == 'admin' || (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'organizationId'])));
+      allow delete: if isAuthenticated() && getUserData().role == 'admin';
+    }
+
+    // Employees collection
+    match /employees/{employeeId} {
+      allow read: if isOrgMember(resource.data.organizationId);
+      allow create, update, delete: if isManagerOrAdmin(request.resource.data.organizationId);
+    }
+
+    // Projects collection
+    match /projects/{projectId} {
+      allow read: if isOrgMember(resource.data.organizationId);
+      allow create, update, delete: if isManagerOrAdmin(request.resource.data.organizationId);
+    }
+
+    // Assignments collection
+    match /assignments/{assignmentId} {
+      allow read: if isOrgMember(resource.data.organizationId);
+      allow create, update, delete: if isManagerOrAdmin(request.resource.data.organizationId);
+    }
+
+    // Training Courses collection
+    match /trainingCourses/{courseId} {
+      allow read: if isOrgMember(resource.data.organizationId);
+      allow create, update, delete: if isManagerOrAdmin(request.resource.data.organizationId);
+    }
+
+    // Recommendations collection (written by server only, read by managers)
+    match /recommendations/{recId} {
+      allow read: if isManagerOrAdmin(resource.data.organizationId);
+      allow write: if false; // Only Firebase Admin SDK on the server can write recommendations
+    }
+  }
+}
